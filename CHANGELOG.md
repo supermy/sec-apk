@@ -9,6 +9,8 @@
 - sec 决策模型数据增强管线:`finetune/collect_sec2.py`(新增 CISA KEV 已知被利用漏洞源)、
   `finetune/convert_sec2.py`(CVSS 连续分→严重度 1-5 五档、合成严重度分级提示词、正常业务困难负例、类别配额封顶)。
 - 训练启动器 `finetune/train_sec2.sh`(GPU 机 RTX 5060 Ti,bf16,4 epoch)。
+- 训练后自动流水 `finetune/post_train_sec2.sh`(等待→重启 LLM→评估→导出 int8→LiteRT NPU 转换→打包)
+  与端侧打包脚本 `finetune/mkphone_sec.py`(命名对齐 APK 的 `laya_ml_*` 约定)。
 
 ## [0.1.0] - 2026-10-18
 

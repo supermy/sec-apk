@@ -172,6 +172,25 @@ adb push <新的 phone/ 文件> /sdcard/models/laya-litert-sec/phone/
 
 替换后重开 APK → **加载引擎(NPU)** → **一键演示**,观察新模型的分诊类别/严重度。
 
+### 5.6 一键后处理(训练→评估→导出→NPU 打包)
+
+`finetune/post_train_sec2.sh` 在 GPU 机上常驻等待,训练一结束便自动串起后续全部步骤并留痕:
+
+```bash
+# 上传脚本并后台守候(训练结束自动执行)
+scp finetune/{post_train_sec2.sh,mkphone_sec.py} my@192.168.0.168:/data/ai/finetune/
+$H 'setsid bash /data/ai/finetune/post_train_sec2.sh >/dev/null 2>&1 </dev/null & disown'
+# 跟踪进度
+$H 'tail -f /data/ai/logs-cancer/post-sec2.log'
+```
+
+流程:`等待训练结束` → `重启 llama-server(8899)` → `evaluate.py → metrics-sec2.json`
+→ `export_onnx.py → /data/ai/laya-sec2-int8` → `chain_litert.sh sec2`(aet_convert→fp16→split_negfix→AOT MT6993)
+→ `mkphone_sec.py sec2 → /data/ai/phone-sec2`。末尾输出 `SEC2-POST-ALL-DONE`。
+
+产出的 `phone-sec2/` 是端侧可直接替换的模型包(`laya_ml_s256_embeds_npu.tflite` + `laya_ml_scorer.bin` + 词表 + 校准 + `questions.json` + `label.txt`)。
+换到手机:`adb push phone-sec2/. /sdcard/models/laya-litert-sec/phone/`,重开 APK → 加载引擎(NPU) → 一键演示。
+
 ---
 
 ## 6. 注意事项
