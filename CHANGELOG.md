@@ -21,6 +21,17 @@
   fail2ban 封禁/解封源 IP。爆破模拟仍只指向本机回环。
 - `build.sh` 支持 `libs/*.jar`(自动剥离多版本 jar 的 META-INF 后参与 javac/d8)。
 
+## [0.6.0] - 2026-10-18
+
+### Added
+- **多语言支持(中文 / English)**:
+  - UI 文案全量资源化:`res/values`(zh) + `res/values-en`(en),覆盖按钮、Tab、状态卡、SSH 目标行、
+    菜单、对话框、说明页、示例选择与交互提示;应用名与桌面 label 同步本地化(`@string/app_name`)。
+  - 语言切换:系统跟随 + 应用内切换(⋮ 菜单 → 语言 / Language,三态:跟随系统/中文/English),
+    选择持久化,切换即时重建界面;API 33+ 已预留 localeConfig(供将来 targetSdk 升级后接入系统级 per-app 语言)。
+  - 冷启动钩子:供自动化验证与演示 `am start -n com.selfhost.layasec/.MainActivity --es lang en|zh|system`。
+  - 事件流日志(动态命令/结果行)暂保持中文,后续按需资源化。
+
 ## [0.5.1] - 2026-10-18
 
 ### Fixed

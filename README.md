@@ -5,6 +5,8 @@
 
 端侧决策:本地弱口令靶标 + 爆破模拟 + fail2ban 式封禁 + **Laya NPU 告警分诊**(天玑 9500 MDLA）。
 全部流量仅限本机回环(127.0.0.1),用于学习与演示,不涉及外部目标。
+界面支持**中文 / English**(默认跟随系统,可应用内切换:⋮ 菜单 → 语言;冷启动可用
+`am start -n com.selfhost.layasec/.MainActivity --es lang en|zh|system`)。
 
 ---
 

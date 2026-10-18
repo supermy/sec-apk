@@ -3,6 +3,7 @@ package com.selfhost.layasec;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
@@ -79,9 +80,26 @@ public class MainActivity extends Activity implements SecLab.Listener {
 
   private EventFeed feed;
 
+  /** 应用内语言(zh/en/跟随系统):覆写资源上下文 */
+  @Override
+  protected void attachBaseContext(Context base) {
+    super.attachBaseContext(Lang.wrap(base));
+  }
+
   @Override
   protected void onCreate(Bundle b) {
     super.onCreate(b);
+    // 测试/演示钩子:am start ... --es lang en|zh|system(冷启动生效)
+    if (getIntent() != null) {
+      String want = getIntent().getStringExtra("lang");
+      if (want != null) {
+        if ("system".equals(want)) want = "";
+        if ((want.isEmpty() || "zh".equals(want) || "en".equals(want)) && !want.equals(Lang.current(this))) {
+          Lang.set(this, want);
+          return;
+        }
+      }
+    }
     prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
     ssh = new SshOps(new SshOps.Emit() {
       @Override public void line(String t) { onEvent(TYPE_SSH, t); }
@@ -136,7 +154,7 @@ public class MainActivity extends Activity implements SecLab.Listener {
     TextView subtitle = new TextView(this);
     String ver = "v0.5";
     try { ver = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Throwable ignored) {}
-    subtitle.setText("网络攻防 · 端侧 NPU 分诊 · " + ver + " · 仅供学习");
+    subtitle.setText(getString(R.string.subtitle_fmt, ver));
     subtitle.setTextSize(10.5f);
     subtitle.setTextColor(DIM);
     titleCol.addView(title);
@@ -402,8 +420,7 @@ public class MainActivity extends Activity implements SecLab.Listener {
     root.addView(box);
 
     TextView note = new TextView(this);
-    note.setText("①连上后 ②防护检查,通过后依次解锁 ③部署规则(可选)→ ④拉取告警并分诊 → ⑤封禁 → ⑥解封;"
-        + "全程只读+防御配置,需目标机为自有设备。");
+    note.setText(R.string.ssh_note);
     note.setTextSize(11);
     note.setTextColor(DIM);
     note.setPadding(dp(4), dp(8), dp(4), 0);
@@ -439,14 +456,14 @@ public class MainActivity extends Activity implements SecLab.Listener {
   private void saveTargetConfig(boolean quiet) {
     String host = sshHost.getText().toString().trim();
     String user = sshUser.getText().toString().trim();
-    if (host.isEmpty() || user.isEmpty()) { onEvent(TYPE_SSH, "请先填写 主机 与 用户,再设为演练目标机"); return; }
+    if (host.isEmpty() || user.isEmpty()) { onEvent(TYPE_SSH, getString(R.string.need_host_user_set)); return; }
     int port = parsePort();
     try {
       TargetStore.save(host, port, user);
       updateTargetLine();
-      if (!quiet) onEvent(TYPE_SSH, "已将演练目标机设为 " + user + "@" + host + ":" + port + "(配置: " + TargetStore.FILE + ")");
+      if (!quiet) onEvent(TYPE_SSH, getString(R.string.ssh_target_set_fmt, user + "@" + host + ":" + port, TargetStore.FILE));
     } catch (Throwable t) {
-      onEvent(TYPE_SSH, "保存目标配置失败: " + t.getMessage());
+      onEvent(TYPE_SSH, getString(R.string.ssh_target_save_fail_fmt, t.getMessage()));
     }
   }
 
@@ -455,16 +472,16 @@ public class MainActivity extends Activity implements SecLab.Listener {
     String host = sshHost.getText().toString().trim();
     String user = sshUser.getText().toString().trim();
     if (host.isEmpty()) {
-      sshTargetLine.setText("当前演练目标机: 未设定(填好主机/端口/用户后点「" + getString(R.string.ssh_set_target) + "」,①连接成功会自动设定)");
+      sshTargetLine.setText(getString(R.string.ssh_target_line_none_fmt, getString(R.string.ssh_set_target)));
     } else {
-      sshTargetLine.setText("当前演练目标机: " + user + "@" + host + ":" + parsePort());
+      sshTargetLine.setText(getString(R.string.ssh_target_line_fmt, user + "@" + host + ":" + parsePort()));
     }
     if (statusLine4 != null) {
       SpannableStringBuilder s = new SpannableStringBuilder();
-      seg(s, "SSH目标机 ", DIM);
-      if (host.isEmpty()) seg(s, "未设定", DIM);
+      seg(s, getString(R.string.status_ssh_line) + " ", DIM);
+      if (host.isEmpty()) seg(s, getString(R.string.status_not_set), DIM);
       else seg(s, user + "@" + host + ":" + parsePort(), CYAN);
-      seg(s, "   ·   远端封禁以④输出为准", DIM);
+      seg(s, "   ·   " + getString(R.string.status_remote_note), DIM);
       statusLine4.setText(s);
     }
   }
@@ -542,14 +559,35 @@ public class MainActivity extends Activity implements SecLab.Listener {
     PopupMenu pm = new PopupMenu(this, anchor);
     pm.getMenu().add(0, 1, 0, R.string.menu_guide);
     pm.getMenu().add(0, 2, 1, R.string.menu_contact);
+    pm.getMenu().add(0, 3, 2, R.string.menu_lang);
     pm.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
       @Override public boolean onMenuItemClick(MenuItem item) {
         if (item.getItemId() == 1) { showGuide(); return true; }
         if (item.getItemId() == 2) { showContact(); return true; }
+        if (item.getItemId() == 3) { showLangDialog(); return true; }
         return false;
       }
     });
     pm.show();
+  }
+
+  /** 语言切换:跟随系统 / 中文 / English(保存后重建界面) */
+  private void showLangDialog() {
+    final String[] values = {"", "zh", "en"};
+    String cur = Lang.current(this);
+    int checked = 0;
+    for (int i = 0; i < values.length; i++) if (values[i].equals(cur)) checked = i;
+    CharSequence[] opts = {
+        getString(R.string.lang_system), getString(R.string.lang_zh), getString(R.string.lang_en)
+    };
+    new AlertDialog.Builder(this)
+        .setTitle(R.string.lang_title)
+        .setSingleChoiceItems(opts, checked, (d, w) -> {
+          d.dismiss();
+          if (!values[w].equals(Lang.current(MainActivity.this))) Lang.set(MainActivity.this, values[w]);
+        })
+        .setNegativeButton(android.R.string.cancel, null)
+        .show();
   }
 
   private void showGuide() {
@@ -604,8 +642,8 @@ public class MainActivity extends Activity implements SecLab.Listener {
     String host = sshHost.getText().toString().trim();
     String user = sshUser.getText().toString().trim();
     String pass = sshPass.getText().toString();
-    if (host.isEmpty() || user.isEmpty()) { onEvent(TYPE_SSH, "请先填写 主机 与 用户"); return null; }
-    if (pass.isEmpty()) { onEvent(TYPE_SSH, "请填写密码(不落盘,仅本次连接使用)"); return null; }
+    if (host.isEmpty() || user.isEmpty()) { onEvent(TYPE_SSH, getString(R.string.need_host_user)); return null; }
+    if (pass.isEmpty()) { onEvent(TYPE_SSH, getString(R.string.need_pass)); return null; }
     int port = parsePort();
     prefs.edit().putString("ssh_host", host).putString("ssh_port", String.valueOf(port)).putString("ssh_user", user).apply();
     updateTargetLine();
@@ -619,14 +657,14 @@ public class MainActivity extends Activity implements SecLab.Listener {
     if (ssh.test(c)) {
       sshTestOk = true;
       saveTargetConfig(true);
-      onEvent(TYPE_SSH, "连接成功:" + c.user + "@" + c.host + ":" + c.port + " 已设为演练目标机,并解锁 ② 防护检查");
+      onEvent(TYPE_SSH, getString(R.string.ssh_connected_fmt, c.user + "@" + c.host + ":" + c.port));
     }
   }
 
   private void sshCheck() {
     SshOps.Cfg c = sshCfg(); if (c == null) return;
     sshCheckOk = ssh.checkDefense(c);
-    if (sshCheckOk) onEvent(TYPE_SSH, "防护检查完成,已解锁 ③ 部署实验规则 / ④ 拉取告警并分诊");
+    if (sshCheckOk) onEvent(TYPE_SSH, getString(R.string.ssh_check_done));
   }
 
   private void sshDeployConfirm(Button b) {
@@ -638,7 +676,7 @@ public class MainActivity extends Activity implements SecLab.Listener {
           if (c != null) bgBusy(b, () -> {
             if (ssh.deployLab(c)) {
               sshDeployOk = true;
-              onEvent(TYPE_SSH, "实验规则已部署(5 次失败/600s 封 600s)");
+              onEvent(TYPE_SSH, getString(R.string.ssh_deploy_done));
             }
           });
         })
@@ -650,7 +688,7 @@ public class MainActivity extends Activity implements SecLab.Listener {
     SshOps.Cfg c = sshCfg(); if (c == null) return;
     if (!ssh.fetchAlerts(c)) return;
     sshAlertsOk = true;
-    onEvent(TYPE_SSH, "告警已拉取,已解锁 ⑤ 封禁源IP");
+    onEvent(TYPE_SSH, getString(R.string.ssh_alerts_done));
     int n = ssh.lastCount();
     String top = ssh.lastTopIp();
     if (!top.isEmpty()) lastTopIp = top;
@@ -661,29 +699,30 @@ public class MainActivity extends Activity implements SecLab.Listener {
     if (!sample.isEmpty()) sb.append(";样例: ").append(sample);
     sb.append("。来源为自有靶机日志,疑似 SSH 弱口令爆破/口令喷洒探测。");
     if (!triage.isLoaded()) {
-      onEvent(SecLab.TYPE_TRIAGE, "SSH 分诊[NPU]: 引擎未加载,请先切到「" + getString(R.string.tab_drill) + "」页点「" + getString(R.string.btn_load) + "」;告警原文已在事件流");
+      onEvent(SecLab.TYPE_TRIAGE, getString(R.string.ssh_triage_no_engine_fmt,
+          getString(R.string.tab_drill), getString(R.string.btn_load)));
       return;
     }
     onEvent(SecLab.TYPE_TRIAGE, "SSH 分诊[NPU]: " + lab.classifyText(sb.toString()));
-    if (!top.isEmpty()) onEvent(TYPE_SSH, "提示: 可点「" + getString(R.string.ssh_ban) + "」对 " + top + " 执行 fail2ban 封禁");
-    else onEvent(TYPE_SSH, "未解析到来源 IP(日志可能为空,或需要 sudo 读 journal)");
+    if (!top.isEmpty()) onEvent(TYPE_SSH, getString(R.string.ssh_ban_hint_fmt, getString(R.string.ssh_ban), top));
+    else onEvent(TYPE_SSH, getString(R.string.ssh_no_ip));
   }
 
   private void sshBanDialog(boolean ban) {
-    EditText et = makeInput("如 45.148.10.7");
+    EditText et = makeInput(getString(R.string.ssh_ip_hint));
     et.setText(lastTopIp);
     new AlertDialog.Builder(this)
         .setTitle(ban ? R.string.ssh_ban : R.string.ssh_unban)
         .setView(et)
         .setPositiveButton(R.string.ssh_exec, (d, w) -> {
           String ip = et.getText().toString().trim();
-          if (!SshOps.validIp(ip)) { onEvent(TYPE_SSH, "IP 格式不合法: " + ip); return; }
+          if (!SshOps.validIp(ip)) { onEvent(TYPE_SSH, getString(R.string.ssh_bad_ip_fmt, ip)); return; }
           SshOps.Cfg c = sshCfg(); if (c == null) return;
           bg(() -> {
             boolean ok = ban ? ssh.ban(c, ip) : ssh.unban(c, ip);
             if (ok) {
-              if (ban) { sshBanOk = true; onEvent(TYPE_SSH, "已封禁 " + ip + ",已解锁 ⑥ 解封源IP"); }
-              else { sshUnbanOk = true; onEvent(TYPE_SSH, "已解封 " + ip); }
+              if (ban) { sshBanOk = true; onEvent(TYPE_SSH, getString(R.string.ssh_banned_fmt, ip)); }
+              else { sshUnbanOk = true; onEvent(TYPE_SSH, getString(R.string.ssh_unbanned_fmt, ip)); }
             }
             runOnUiThread(this::refreshStatus);
           });
@@ -713,7 +752,7 @@ public class MainActivity extends Activity implements SecLab.Listener {
       case SecLab.TYPE_ATTACK:
       case SecLab.TYPE_DEFENSE:
       case SecLab.TYPE_TARGET:
-        return "本机靶标 127.0.0.1:" + (lab == null ? 18080 : lab.port());
+        return getString(R.string.tag_local_fmt, lab == null ? 18080 : lab.port());
       default:
         return "";
     }
@@ -721,9 +760,9 @@ public class MainActivity extends Activity implements SecLab.Listener {
 
   private String sshTargetTag() {
     String host = sshHost == null ? "" : sshHost.getText().toString().trim();
-    if (host.isEmpty()) return "SSH目标机(未设定)";
+    if (host.isEmpty()) return getString(R.string.tag_ssh_none);
     String user = sshUser.getText().toString().trim();
-    return "SSH目标机 " + user + "@" + host + ":" + parsePort();
+    return getString(R.string.tag_ssh_fmt, user + "@" + host + ":" + parsePort());
   }
 
   private void refreshStatus() {
@@ -732,36 +771,39 @@ public class MainActivity extends Activity implements SecLab.Listener {
     boolean srcReady = triage.sourceReady();
     boolean modelReady = triage.modelReady();
     SpannableStringBuilder s1 = new SpannableStringBuilder();
-    seg(s1, "模型 ", DIM);
-    seg(s1, modelReady ? (srcReady ? "就绪(源包)" : "就绪(已安装)") : "缺失", modelReady ? GREEN : AMBER);
-    seg(s1, "   ·   引擎 ", DIM);
-    seg(s1, triage.backend(), triage.isLoaded() ? CYAN : DIM);
+    seg(s1, getString(R.string.status_model) + " ", DIM);
+    seg(s1, modelReady
+        ? getString(srcReady ? R.string.status_ready_src : R.string.status_ready_installed)
+        : getString(R.string.status_missing), modelReady ? GREEN : AMBER);
+    seg(s1, "   ·   " + getString(R.string.status_engine) + " ", DIM);
+    seg(s1, triage.isLoaded() ? triage.backend() : getString(R.string.engine_unknown), triage.isLoaded() ? CYAN : DIM);
     statusLine1.setText(s1);
 
     SpannableStringBuilder s2 = new SpannableStringBuilder();
     boolean sshMode = sshDrillMode();
-    seg(s2, "靶标 ", DIM);
+    seg(s2, getString(R.string.status_target) + " ", DIM);
     if (sshMode) {
-      seg(s2, sshUser.getText().toString().trim() + "@" + sshHost.getText().toString().trim() + ":" + parsePort() + "(SSH sshd)", AMBER);
+      seg(s2, getString(R.string.status_target_ssh_fmt,
+          sshUser.getText().toString().trim() + "@" + sshHost.getText().toString().trim() + ":" + parsePort()), AMBER);
     } else if (lab.targetRunning()) {
-      seg(s2, "本机运行中 :" + lab.port(), GREEN);
+      seg(s2, getString(R.string.status_running_local_fmt, lab.port()), GREEN);
     } else {
-      seg(s2, "本机已停止", DIM);
+      seg(s2, getString(R.string.status_stopped_local), DIM);
     }
-    seg(s2, "   ·   防御 ", DIM);
+    seg(s2, "   ·   " + getString(R.string.status_defense) + " ", DIM);
     if (sshMode) {
-      seg(s2, "远端 fail2ban", GREEN);
+      seg(s2, getString(R.string.status_remote_f2b), GREEN);
     } else if (lab.defenderRunning()) {
-      seg(s2, "本机运行中(" + lab.windowSec() + "s/" + lab.threshold() + "次)", GREEN);
+      seg(s2, getString(R.string.status_running_window_fmt, lab.windowSec(), lab.threshold()), GREEN);
     } else {
-      seg(s2, "本机已停止", DIM);
+      seg(s2, getString(R.string.status_stopped_local), DIM);
     }
     statusLine2.setText(s2);
 
     List<String> bans = lab.bannedIps();
     SpannableStringBuilder s3 = new SpannableStringBuilder();
-    seg(s3, "本机封禁 ", DIM);
-    seg(s3, bans.isEmpty() ? "无" : String.join(", ", bans), bans.isEmpty() ? DIM : RED);
+    seg(s3, getString(R.string.status_bans) + " ", DIM);
+    seg(s3, bans.isEmpty() ? getString(R.string.status_none) : String.join(", ", bans), bans.isEmpty() ? DIM : RED);
     statusLine3.setText(s3);
     updateTargetLine();
 
