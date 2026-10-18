@@ -34,6 +34,7 @@
 - **发布流程与市场物料**:
   - `release.sh`:升版本 → 重建(发布清单 debuggable=false,`MANIFEST/VER` 注入)→ badging 版本/签名/单测三重校验 → `release/` 产物 + sha256(吸收 laya-test「升版本必须重建」的版本错位教训)。
   - `docs/market/` 发布清单(国内主流市场要点、F-Droid 自建仓库 gh-pages 独立 worktree 流程、物料状态与隐私/targetSdk 合规待办)与双语文案(listings)。
+- **骁龙 NPU 可行性调研**:`docs/npu-qualcomm.md` — AOT vs 端上 JIT 对比、AAR 实测内容、QAIRT skel 需求、版本对齐与回归路径、阻塞点(骁龙真机 + LiteRT 2.3.0 全链路升级)。
 
 ## [0.5.1] - 2026-10-18
 
