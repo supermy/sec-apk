@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Sec Lab</string>
+  <string name="sec_tab">Sec</string>
+  <string name="engine_unknown">engine not loaded</string>
+  <string name="model_ok">model ready</string>
+  <string name="model_missing">model missing</string>
+</resources>

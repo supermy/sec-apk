@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">攻防实验台</string>
+  <string name="sec_tab">攻防</string>
+  <string name="engine_unknown">引擎未加载</string>
+  <string name="model_ok">模型就绪</string>
+  <string name="model_missing">模型缺失</string>
+</resources>

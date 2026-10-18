@@ -1,0 +1,37 @@
+攻防实验台 (sec-apk)
+Copyright 2026 supermy
+
+教学用途:非 Root 本机网络攻防演示(本地靶标 + 爆破模拟 + fail2ban 式防御 + 端侧
+NPU 告警分诊)。所有网络流量仅限本机回环(127.0.0.1)。
+
+本项目复用并包含 laya-test (github.com/supermy/laya-test, Apache-2.0) 的推理引擎
+源码(src/com/laya/ 下的 LayaJson/LayaTokenizer/LayaCalibration/LayaPromptBuilder/
+LayaDecoder/DecisionEngine/LayaRunnerEngine),同一许可证下再分发。
+
+This product includes software developed by third parties:
+
+* LiteRT (TensorFlow Lite) runtime, AAR 2.2.0
+  Copyright 2019 The TensorFlow Authors / Google LLC
+  Licensed under the Apache License, Version 2.0
+  https://github.com/google-ai-edge/litert
+
+* Kotlin Standard Library
+  Copyright 2010-2024 JetBrains s.r.o.
+  Licensed under the Apache License, Version 2.0
+
+* libc++_shared (LLVM libc++, packaged for NPU runner)
+  Copyright The LLVM Authors
+  Licensed under the Apache License 2.0 with LLVM Exceptions
+
+* LiteRT MediaTek dispatch plugin (libLiteRtDispatch_MediaTek.so / libnpu_rt.so
+  runner payload)
+  Proprietary — MediaTek Inc. Distributed as provided by the device vendor
+  toolchain; used only to execute models on MediaTek MDLA hardware.
+
+* Decision model core (scorer weights / tokenizer / calibration files)
+  Fine-tuned from convaiinnovations/laya-multilingual — see the upstream model
+  card for applicable model license terms. Model packages are installed
+  separately (/sdcard/models/laya-litert-sec) and carry their own terms.
+
+* CISA KEV / NVD CVE / MITRE ATT&CK data used by the fine-tune scripts are
+  public-domain / openly licensed U.S. Government or MITRE works.
