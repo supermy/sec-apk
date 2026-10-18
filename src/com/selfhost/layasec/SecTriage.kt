@@ -27,6 +27,17 @@ class SecTriage(private val ctx: Context) {
       "laya_ml_calibration.json",
       "tokenizer.json",
     )
+
+    /** 手动分诊示例(标签 → 文本):覆盖 5 类别 + 困难负例(误报/低危),供引导与自测 */
+    val SAMPLES: List<Pair<String, String>> = listOf(
+      "正常业务" to "运维例行巡检:周三 03:00 监控平台对已上线的 400 台主机做一次存活与端口探测,结果写入周报,无任何登录尝试,例行变更单已审批。",
+      "侦察探测" to "边界防护日志:10 分钟内来源 45.148.10.7 对 22/3306/6379/9200 等 12 个端口各发起 1 次连接,间隔均匀,无认证请求,疑似端口扫描/资产探测。",
+      "攻击威胁" to "WAF 告警:来源 103.75.22.18 在 90 秒内向 /admin/login 提交 312 次 POST,用户名轮询 admin/root/test,疑似口令爆破,已触发速率限制。",
+      "钓鱼欺诈" to "邮件网关告警:主题【紧急】账户将在 24 小时内停用,发件域 micros0ft-secure.com,正文含短链 bit.ly/3xTt9 引导输入口令,疑似钓鱼邮件。",
+      "防御处置" to "SOAR 处置回执:对爆破源 IP 211.90.7.3 已执行 fail2ban 封禁 600s 并通知值班复核,该 IP 后续请求全部 403,攻击流量下降 98%。",
+      "困难负例·误报" to "漏扫平台例行任务:对资产段 10.0.0.0/24 执行季度合规扫描,低频探测且无认证尝试,已备案为计划内扫描,无需处置。",
+      "困难负例·低危" to "内部员工在测试环境连续 3 次输错 SSH 密码后致电重置,来源为内网办公网段,无横向移动迹象,建议仅记录并提醒。",
+    )
   }
 
   private var engine: LayaRunnerEngine? = null
@@ -63,24 +74,34 @@ class SecTriage(private val ctx: Context) {
   fun isLoaded(): Boolean = engine != null
   fun backend(): String = if (engine == null) "未加载" else if (engineNpu) "NPU(MTK MDLA)" else "GPU/CPU"
 
-  /** 把 /sdcard 源包模型拷入应用私有目录(大文件,须在后台线程调用)。返回 null 成功,否则错误串。 */
-  fun install(): String? {
+  /** 把 /sdcard 源包模型拷入应用私有目录(onProgress 回传 0-100 进度;大文件,须在后台线程调用)。返回 null 成功,否则错误串。 */
+  fun install(onProgress: ((Int) -> Unit)? = null): String? {
     if (!sourceReady()) return "源包缺失: $SOURCE_DIR(需含 laya_ml_s256_embeds_npu.tflite 等 ${REQUIRED.size} 个文件)"
     workDir.mkdirs()
-    for (name in REQUIRED + listOf("questions.json", "label.txt", "token_embeddings.json")) {
+    val names = REQUIRED + listOf("questions.json", "label.txt", "token_embeddings.json")
+    val todo = names.filter { name ->
       val s = File(sourceDir, name)
-      if (!s.isFile) continue
       val d = File(workDir, name)
-      if (!d.isFile || d.length() != s.length()) {
-        try {
-          s.copyTo(d, overwrite = true)
-        } catch (t: Throwable) {
-          return "拷贝 $name 失败: ${t.message}"
-        }
+      s.isFile && (!d.isFile || d.length() != s.length())
+    }
+    onProgress?.invoke(0)
+    var i = 0
+    for (name in todo) {
+      val s = File(sourceDir, name)
+      val d = File(workDir, name)
+      try {
+        s.copyTo(d, overwrite = true)
+      } catch (t: Throwable) {
+        return "拷贝 $name 失败: ${t.message}"
       }
+      i++
+      onProgress?.invoke(i * 100 / maxOf(1, todo.size))
     }
     return null
   }
+
+  /** Java 友好:带进度回调的安装(0-100) */
+  fun installWithProgress(cb: java.util.function.IntConsumer): String? = install { cb.accept(it) }
 
   /** 加载引擎(耗时,后台线程)。返回 null 成功。 */
   fun load(): String? {

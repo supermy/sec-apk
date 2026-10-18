@@ -5,4 +5,50 @@
   <string name="engine_unknown">engine not loaded</string>
   <string name="model_ok">model ready</string>
   <string name="model_missing">model missing</string>
+
+  <string name="btn_guide">Guide</string>
+  <string name="btn_sample">Sample</string>
+  <string name="btn_triage">Triage</string>
+  <string name="guide_title">Quick Guide</string>
+  <string name="guide_sample_title">Triage samples (pick one)</string>
+  <string name="guide_body">[Learning use only — read first]\nThis app is for security education and drills on devices you own: simulated attacks always target the built-in loopback (127.0.0.1) weak-password target only; the SSH drill is limited to hosts you own or are authorized in writing to test.\nNever use it against unauthorized targets — that may violate laws and regulations; you bear all consequences.\nLicense: Apache-2.0 (see LICENSE/NOTICE). Commercial use is allowed only with attribution kept.\n\n[Workflow: Drill-tab buttons (1)-(6)]\n(1) Fetch model (optional): download the on-device model from the public ModelScope repo supermy/myjev (sec2/phone) to /sdcard/models/laya-litert-sec/phone/; complete files are skipped, large files resume (.part), the button shows percent progress — tap again to continue after a network drop.\n(2) Install model (optional): copy the pack into app-private storage (~650 MB) for more stable loading; without it the source pack is used directly.\n(3) Load engine: initialise on-device inference — NPU (MDLA) on MediaTek Dimensity, GPU/CPU elsewhere; the status card shows the active backend.\n(4) Start target: serve the weak-password target on loopback 127.0.0.1:18080 (testuser/test123) as the attack subject; tap again to stop.\n(5) Simulate brute force: dictionary attempts against the (4) local target only (traffic never leaves loopback); live progress is shown on the button; 5 or more failures inside the window is what triggers a ban.\n(6) Start defender: fail2ban equivalent — 5 same-source failures within 600 s triggers a ban (in the local demo the banned address is 127.0.0.1, i.e. the phone itself) plus NPU triage; banned sources then get 403 and appear in the "Local bans" status line.\nGating: run (4)→(5)→(6) in order; every feed line is tagged on its right with the acting target (@Local target / @SSH target).\n\n[SSH-target mode (once a target is set, 4-6 point at the real server)]\n· Trigger: filling host/user in the SSH tab switches the mode (takes effect at any time); the status card shows "target user@host:port (SSH sshd)". Without a target the local loopback mode stays active (127.0.0.1:18080); the two modes are independent.\n· (4) Target check: probe the sshd port and show the SSH banner (no login) — the drill target is that machine sshd.\n· (5) Password attempts: every tap asks for authorization confirmation (owned/authorized devices only) and tries the fixed small built-in dictionary directly against sshd (max 20); failures are really written to the target logs and counted by fail2ban.\n· (6) Defense query: log in over SSH and read fail2ban status plus the sshd jail banned list; a failing session right after a ban is the expected self-lockout effect.\n· Teaching loop: once failures reach maxretry the target auto-bans this phone IP → later connections are refused or time out ((5) stops) → wait out bantime or run fail2ban-client set sshd unbanip (phone-ip) on the target console.\n\n[One-tap demo]\n· Local mode (no target): runs (4) Start target → (5) brute force → (6) Start defender automatically (ban of 127.0.0.1 plus NPU triage).\n· SSH-target mode (target set): after an authorization confirmation it runs (4) target check → (5) password attempts → (6) remote fail2ban status → (4) fetch alerts and NPU triage; session steps are skipped without a password.\n· (3) Deploy rules modifies the target fail2ban config and stays manual — not part of the one-tap demo.\n\n[Two independent targets]\n· Local target (Drill tab): weak-password service on 127.0.0.1:18080 (testuser/test123). Step (5) only attacks it, and step (6) bans the loopback address 127.0.0.1 (the phone itself) — a full fail2ban demo: high-frequency failures in the window → ban → all later requests return 403. The "Local bans" status line reflects only this drill; seeing 127.0.0.1 there is normal.\n· SSH target (SSH tab): a real server you own or are authorized to test, used for defense only — (2) check sshd config &amp; fail2ban status, (3) deploy lab rules (5 failures/600s; needs root or passwordless sudo), (4) fetch auth-failure alerts for NPU triage, (5)(6) remote ban/unban. Fill host/port/user and tap "Set as drill target"; a successful (1) Test also sets and saves it to /sdcard/sec-lab/ssh-target.json automatically.\n· Remote banned IPs live in the target machine fail2ban: view them in the event feed via (2) Check or (4) Fetch &amp; triage. The "Local bans" status line never includes remote IPs.\n· Safety boundary: setting an SSH target never changes attack direction — brute-force simulation always stays on loopback and never touches remote or external hosts.\n\n[Manual triage] Tap "Sample" to load a security text (editable), then "Triage" for category / severity (1-5) / human-review and the suggested action.\n\n[SSH defense drill (owned or authorized hosts only)]\nSteps unlock in order: (1) Test success unlocks (2); (2) Check unlocks (3)(4); (4) parsing a TOP source IP unlocks (5) (auto-filled); (5) ban success unlocks (6).\nIf triage recommends "ban IP and escalate to human review", use (5) to fail2ban-ban the TOP IP, closing the alert→triage→response loop.\n\n[Event feed] Cyan $ lines show the actual/equivalent commands and requests executed at each step (on the SSH tab, the full remote script is echoed).</string>
+
+  <string name="menu_guide">Guide</string>
+  <string name="menu_contact">Contact</string>
+  <string name="tab_drill">Drill</string>
+  <string name="tab_triage">Triage</string>
+  <string name="tab_ssh">SSH target</string>
+  <string name="contact_title">Contact</string>
+  <string name="contact_note">Scan with WeChat to add the author</string>
+
+  <string name="feed_caption">Event feed</string>
+  <string name="feed_clear">Clear</string>
+  <string name="footer">For learning only · never target unauthorized hosts · Apache-2.0</string>
+
+  <string name="btn_net">① Fetch model</string>
+  <string name="btn_install">② Install model</string>
+  <string name="btn_load">③ Load engine (NPU)</string>
+  <string name="btn_target">④ Start target</string>
+  <string name="btn_attack">⑤ Brute force</string>
+  <string name="btn_defender">⑥ Start defender</string>
+  <string name="btn_demo">▶ One-tap demo</string>
+  <string name="btn_stop">Stop all</string>
+  <string name="btn_clearban">Clear bans</string>
+
+  <string name="ssh_caption">SSH target defense drill (owned devices only · follow the numbers)</string>
+  <string name="ssh_host_hint">Host (e.g. 192.168.0.168)</string>
+  <string name="ssh_port">Port</string>
+  <string name="ssh_user">SSH user</string>
+  <string name="ssh_pass">Password (not stored)</string>
+  <string name="ssh_test">① Test</string>
+  <string name="ssh_check">② Check</string>
+  <string name="ssh_deploy">③ Deploy rules</string>
+  <string name="ssh_alerts">④ Fetch &amp; triage</string>
+  <string name="ssh_ban">⑤ Ban IP</string>
+  <string name="ssh_unban">⑥ Unban IP</string>
+  <string name="ssh_set_target">Set as drill target</string>
+  <string name="ssh_brute_confirm">Owned or explicitly authorized devices only!\nThe app will connect directly to the sshd at %1$s and try a small built-in dictionary (max 20 attempts). Every failure is really recorded in the target logs and counted by fail2ban; once maxretry is exceeded the target bans this phone IP (your own SSH access may be locked out).\nProceed?</string>
+  <string name="demo_ssh_confirm">One-tap demo in SSH-target mode:\n(4) probe target sshd → (5) small-dictionary attempts (same authorization rules, max 20) → (6) show remote fail2ban status → (4) fetch alerts and run NPU triage.\nOwned/authorized devices only (target %1$s; session steps are skipped without a password). Proceed?</string>
+  <string name="ssh_exec">Apply</string>
+  <string name="ssh_deploy_confirm">This writes /etc/fail2ban/jail.d/sshd-lab.local (5 failures/600s, ban 600s) and restarts fail2ban; needs root or passwordless sudo. Owned or authorized hosts only — continue?</string>
 </resources>

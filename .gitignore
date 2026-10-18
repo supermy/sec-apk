@@ -1,9 +1,11 @@
 # 构建产物
 out/
+out-test/
 *.apk
 *.apk.idsig
 *.idsig
 build/
+*.keystore
 # 日志 / 临时
 *.log
 *.tmp
@@ -15,3 +17,10 @@ finetune/*.safetensors
 finetune/laya-*/
 finetune/__pycache__/
 __pycache__/
+phone-sec2/
+# 演示视频中间产物(可再生成;保留 mp4/gif/srt/脚本)
+demo/audio/
+demo/segments/
+demo/frames/
+# 测试运行时依赖(按 run-tests.sh 提示下载)
+tools/json-*.jar
