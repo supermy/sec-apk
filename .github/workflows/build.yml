@@ -18,16 +18,19 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: sdkmanager "platforms;android-34" "build-tools;35.0.0"
+      - name: Install SDK packages (use preinstalled SDK)
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;35.0.0"
 
       - name: Set up env (android.jar / build-tools PATH)
         run: |
-          echo "ANDROID_JAR=$ANDROID_HOME/platforms/android-34/android.jar" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_JAR=$SDK/platforms/android-34/android.jar" >> "$GITHUB_ENV"
+          echo "$SDK/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Install Kotlin compiler
         run: |
