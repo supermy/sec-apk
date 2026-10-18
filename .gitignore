@@ -24,3 +24,6 @@ demo/segments/
 demo/frames/
 # 测试运行时依赖(按 run-tests.sh 提示下载)
 tools/json-*.jar
+# 发布产物与临时发布清单(不进 master,发布走 Release/gh-pages)
+release/
+out-release-manifest.xml

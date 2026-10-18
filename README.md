@@ -20,6 +20,14 @@
 
 ---
 
+## 发布(Release)
+
+- 一键发版:`bash release.sh [-v X.Y.Z]` → 升版本 → **重建**(debuggable=false 发布清单)→ badging/签名/单测校验 → `release/seclab-X.Y.Z.apk`(+sha256)
+- 市场清单与文案(国内主流市场 + F-Droid 自建仓库 + 隐私/合规待办):[docs/market/README.md](docs/market/README.md)、[docs/market/listings.md](docs/market/listings.md)
+- GitHub Release:`gh release create vX.Y.Z release/seclab-X.Y.Z.apk`
+
+---
+
 ## 1. 目录结构
 
 ```

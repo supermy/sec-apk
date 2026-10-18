@@ -2,6 +2,7 @@
 # 攻防实验台 APK 构建(kotlinc + 独立进程 runner;复用 laya engine 源码与 native libs)
 # 用法: bash build.sh
 # 环境覆盖(CI/其它机器):ANDROID_JAR  KOTLINC  KS/KS_PASS/KS_ALIAS  JNIEXEC
+# 发布构建覆盖:VER=<版本号> MANIFEST=<发布清单(debuggable=false)>;release.sh 自动使用
 # native 回退:JNIEXEC 不存在时使用仓库内 native/arm64-v8a; 无签名库时输出 seclab-<HHMM>-unsigned.apk
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -14,13 +15,13 @@ JNIEXEC="${JNIEXEC:-$HOME/laya-test/apk/jniExec}"
 [ -d "$JNIEXEC" ] || JNIEXEC="$HERE/native/arm64-v8a"
 KOTLINC=${KOTLINC:-kotlinc}
 OUT="$HERE/out"
-VER="$(date +%H%M)"
+VER="${VER:-$(date +%H%M)}"
 [ -f "$SDK" ] || { echo "缺少 android.jar: $SDK(可用 ANDROID_JAR 覆盖)"; exit 1; }
 echo "   sdk: $SDK"
 echo "   natives: $JNIEXEC"
 
 rm -rf "$OUT"; mkdir -p "$OUT/classes" "$OUT/dex" "$OUT/aar" "$OUT/jni" "$OUT/gen"
-MANIFEST="$HERE/AndroidManifest.xml"
+MANIFEST="${MANIFEST:-$HERE/AndroidManifest.xml}"
 STDLIB="$(dirname $(readlink -f $(which kotlinc)))/../lib/kotlin-stdlib.jar"
 echo "   stdlib: $STDLIB"
 
